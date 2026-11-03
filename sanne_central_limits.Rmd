@@ -103,8 +103,8 @@ prevent printing of the R code that generated the plot.
 ```{r initial function, eval=FALSE}
 # set 'eval=TRUE' (or remove it) for this block to be interpreted by R
 
-generate_dataset <- function(vectors, samples) {
-  dataset <- matrix(nrow= samples, ncol=vectors)
+generate_dataset <- function(n, m) {
+  dataset <- matrix(nrow= m, ncol=n)
   col_names <- list()
   for(i in seq(vectors)){
     value <- rbeta(samples, 10, 2)
