@@ -18,14 +18,14 @@ Demonstrate the central limit theorem
 
 ### Subgoals
 
-- Learn about RMarkdown (the thing you're reading now)
-- Refactor some code, think about simplification
+-   Learn about RMarkdown (the thing you're reading now)
+-   Refactor some code, think about simplification
 
 ### Prerequisites for the central limit demonstration
 
-- generator of numbers from some distribution
-- give some impression of the distribution
-- display the distribution of the means
+-   generator of numbers from some distribution
+-   give some impression of the distribution
+-   display the distribution of the means
 
 Let's have a look at how to create some skewed distributions with
 built-in R functions
@@ -93,30 +93,25 @@ prevent printing of the R code that generated the plot.
 
 ## Laying the basis: Initial functions
 
-- Create a function to create a list with 300 vectors with 1000 samples
-  each using one of the rbeta distributions (pick your own parameters)
-- Create a function to calculate a vector with the averages of all of
-  these vectors
-- Create q-q plots. Use this to show the normality of one of the
-  original distributions, and of the resulting averages vector
+-   Create a function to create a list with 300 vectors with 1000
+    samples each using one of the rbeta distributions (pick your own
+    parameters)
+-   Create a function to calculate a vector with the averages of all of
+    these vectors
+-   Create q-q plots. Use this to show the normality of one of the
+    original distributions, and of the resulting averages vector
 
 ```{r initial function, eval=FALSE}
 # set 'eval=TRUE' (or remove it) for this block to be interpreted by R
 
 # TEST COMMENT
 
-generate_dataset <- function(vectors, samples) {
-  dataset <- matrix(nrow= samples, ncol=vectors)
-  col_names <- list()
-  for(i in seq(vectors)){
-    value <- rbeta(samples, 10, 2)
-    dataset[,i] <- value
-    var_name <- paste0("vector_", i)
-    col_names <- c(col_names, var_name)
+generate_dataset <- function() {
+  result <- list()
+  for (i in 1:300) {
+    result[[i]] <- rbeta(1000, 3, 4)
   }
-  dataset <- data.frame(dataset)
-  colnames(dataset) <- col_names
-  return(dataset)
+  return(result)
 }
 
 calculate_mean_values <- function(dataset) {
@@ -127,8 +122,8 @@ calculate_mean_values <- function(dataset) {
 random_samples <- generate_dataset(1000, 300)
 mean_values <- calculate_mean_values(random_samples)
 
-qqnorm(random_samples[[1]])
-qqnorm(mean_values)
+qqnorm(random_samples[[1]], main = "Original distribution", pch = 1, frame = FALSE)
+qqnorm(mean_values, main = "Mean distributions", pch = 1, frame = FALSE)
 ```
 
 ## Refactoring: adding functionality
@@ -209,17 +204,18 @@ your function in the **generate_dataset** call
 
 Hints:
 
-- You can pass a function as an argument, and call this function by
-  using the argument name in your function
+-   You can pass a function as an argument, and call this function by
+    using the argument name in your function
 
-- Note that the random number functions all start with the number of
-  samples, and are followed with specific arguments for the required
-  distribution
+-   Note that the random number functions all start with the number of
+    samples, and are followed with specific arguments for the required
+    distribution
 
-- examples are runif, rnorm, rbeta, look them up with `?`
+-   examples are runif, rnorm, rbeta, look them up with `?`
 
-- You can pass *any* number of arguments by using '...' in the argument
-  list. This can be passed on to functions inside your function body
+-   You can pass *any* number of arguments by using '...' in the
+    argument list. This can be passed on to functions inside your
+    function body
 
 ```{r free form random argument}
 generate_dataset <- function(n, vectors, samples, calc_function = rbeta) {
@@ -262,14 +258,24 @@ sentences each suffices.
 
 # Demonstrating the Central Limit Theorem
 
+According to the Central Limit Theorem (CLM), if we take samples with
+random and independent observations and calculate the mean of each
+sample, the probability distribution of these means will resemble a
+normal distribution.
+
+To demonstrate this, we sgenerate a list of 300 samples, each containing
+1000 non-normally-distributed values. We then calculate the means of
+each of the 300 samples and plot this and one of the original samples as
+qqplots to assess their distribution.
+
 The `generate_dataset` function creates a list of `n` datasets. The
 function requires 4 arguments:
 
-- n = number of datasets
-- vectors = number of columns across all datasets
-- samples = number of rows across all datasets
-- calc_function = the function used to generate the data, default =
-  `rbeta`
+-   n = number of datasets
+-   vectors = number of columns across all datasets
+-   samples = number of rows across all datasets
+-   calc_function = the function used to generate the data, default =
+    `rbeta`
 
 The dataset assigns the column names as "vector\_#" with \# being the
 number of the column.
@@ -316,6 +322,10 @@ par(mfrow=c(1,2))
 dataframe_beta <- sample_dataset_beta[[1]]
 dataframe_norm <- sample_dataset_norm[[1]]
 
-qqnorm(dataframe_beta[[1]])
-qqnorm(dataframe_norm[[1]])
+qqnorm(dataframe_beta[[1]], main = "Original distribution", pch = 1, frame = FALSE)
+qqnorm(dataframe_norm[[1]], main = "Original distribution", pch = 1, frame = FALSE)
 ```
+
+From these graphs we can observe that the original sample 1 was not
+normally distributed, while the collective means dataset does appear to
+be so. This proves the CLM.
