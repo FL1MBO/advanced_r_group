@@ -1,0 +1,392 @@
+---
+title: "Central Limit Answer"
+author: "Henk"
+date: "2024-10-27"
+output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Goal
+
+Demonstrate the central limit theorem
+
+### Subgoals
+
+- Learn about RMarkdown (the thing you're reading now)
+- Refactor some code, think about simplification
+
+### prerequisites for the central limit demonstration
+
+- generator of numbers from some distribution
+- give some impression of the distribution
+- display the distribution of the means
+
+Let's have a look at how to create some skewed distributions with
+built-in R functions
+
+```{r distributions}
+
+# The following example was taken from: https://statisticsglobe.com/draw-normal-left-right-skewed-distributions-r
+
+set.seed(35486)                    # Create random distributions
+data <- data.frame(x1 = rbeta(1000, 10, 2),
+                   x2 = rbeta(1000, 5, 2),
+                   x3 = rnorm(1000),
+                   x4 = rbeta(1000, 2, 5),
+                   x5 = rbeta(1000, 2, 10))
+
+head(data)                         # Print head of data
+```
+
+As you can see, we're using the beta distribution, which is defined as
+
+$\mathrm{Beta}(\alpha, \beta) = \displaystyle \frac{x^{\alpha-1}(1-x)^{\beta-1}}{B(\alpha,\beta)}$
+
+where
+
+$\mathrm{B}(\alpha, \beta)=\displaystyle \frac{\Gamma(\alpha)\Gamma(\beta)}{\Gamma(\alpha + \beta)}$
+
+and $\Gamma$ is the Gamma function:
+$\Gamma(z) = \displaystyle \int_{0}^{\infty} t^{z-1} e^{-t}\mathrm dt$
+
+see also <https://en.wikipedia.org/wiki/Beta_distribution>
+
+All of this is not very relevant here, but to show how to write maths:
+<https://rpruim.github.io/s341/S19/from-class/MathinRmd.html>
+
+## Here are some plots to show what the distributions look like graphically
+
+Here I've used 'base R' functions, because we're going to talk about
+ggplot2 later in this course.
+
+```{r densityplots, echo=FALSE}
+plot(density(data$x1), col = 2,    # Overlay all columns as densities
+     xlim = c(- 3, 3),
+     ylim = c(0, 5))
+lines(density(data$x2), col = 3)
+
+lines(density(data$x3), col = 4)
+lines(density(data$x4), col = 5)
+lines(density(data$x5), col = 6)
+legend("topleft",                  # Add legend to plot
+       legend = c("x1 = rbeta(1000, 10, 2)",
+                  "x2 = rbeta(1000, 5, 2)",
+                  "x3 = rnorm(1000)",
+                  "x4 = rbeta(1000, 2, 5)",
+                  "x5 = rbeta(1000, 2, 10)"),
+       col = 2:6,
+       lty = 1,
+       cex = 0.8)
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to
+prevent printing of the R code that generated the plot.
+
+# Assignment
+
+## Laying the basis: Initial functions
+
+- Create a function to create a list with 300 vectors with 1000 samples
+  each using one of the rbeta distributions (pick your own parameters)
+- Create a function to calculate a vector with the averages of all of
+  these vectors
+- Create q-q plots. Use this to show the normality of one of the
+  original distributions, and of the resulting averages vector
+
+```{r initial function}
+
+generate_dataset <- function() {
+  result <- list()
+  for (i in 1:300) {
+    result[[i]] <- rbeta(1000, 2, 5)
+  }
+  return(result)
+}
+
+calculate_mean_values <- function(dataset) {
+  result <- c()
+  for (i in 1:300) {
+    result <- c(result, mean(dataset[[i]]))
+  }
+  return(result)
+}
+
+random_samples <- generate_dataset()
+mean_values <- calculate_mean_values(random_samples)
+
+qqnorm(random_samples[[1]])
+qqnorm(mean_values)
+
+```
+
+## Refactoring: adding functionality
+
+We'd like to be able to set the number of datasets, and the number of
+samples per dataset. Copy the code block from above (not very DRY, but
+you will have the history of your thought process in this document)
+
+the generate_dataset function should now take some arguments, being n
+for the number of datasets, and m for the number of samples in each
+dataset
+
+We're *refactoring*, so make sure that the **generate_dataset()** call
+still works.
+
+```{r first parameters}
+
+generate_dataset <- function(n = 300, m = 1000) {
+  result <- list()
+  for (i in 1:n) {
+    result[[i]] <- rbeta(m,2,5)
+  }
+  return(result)
+}
+
+calculate_mean_values <- function(dataset) {
+  result <- c()
+  for (i in 1:length(dataset)) {
+    result <- c(result, mean(dataset[[i]]))
+  }
+  return(result)
+}
+
+random_samples <- generate_dataset()
+mean_values <- calculate_mean_values(random_samples)
+
+qqnorm(random_samples[[1]])
+qqnorm(mean_values)
+
+```
+
+## Different alpha and beta arguments
+
+Copy your refactored (working) code again and now add code to vary alpha
+and beta values for the rbeta function. Again, make sure the
+argument-less call gives the same results as before.
+
+```{r add alpha and beta parameters}
+generate_dataset <- function(n = 300, m = 1000, alpha=2, beta=5) {
+  result <- list()
+  for (i in 1:n) {
+    result[[i]] <- rbeta(m, alpha, beta)
+  }
+  return(result)
+}
+
+calculate_mean_values <- function(dataset) {
+  result <- c()
+  for (i in 1:length(dataset)) {
+    result <- c(result, mean(dataset[[i]]))
+  }
+  return(result)
+}
+
+random_samples_old_method <- generate_dataset() # still works
+random_samples <- generate_dataset(300, 1000, 1, 3)
+
+mean_values <- calculate_mean_values(random_samples)
+
+qqnorm(random_samples[[1]])
+qqnorm(mean_values)
+```
+
+## Ambitiouser exercise
+
+So far we have only used rbeta functions. Now make it possible to choose
+your function in the **generate_dataset** call
+
+Hints: - You can pass a function as an argument, and call this function
+by using the argument name in your function - Note that the random
+number functions all start with the number of samples, and are followed
+with specific arguments for the required distribution - examples are
+runif, rnorm, rbeta, look them up with `?` - You can pass *any* number
+of arguments by using '...' in the argument list. This can be passed on
+to functions inside your function body
+
+```{r free form random argument}
+
+generate_dataset <- function(n = 300, m = 1000, func=rbeta, ...) {
+  result <- list()
+  for (i in 1:n) {
+    result[[i]] <- func(m, ...)
+  }
+  return(result)
+}
+
+calculate_mean_values <- function(dataset) {
+  result <- c()
+  for (i in 1:length(dataset)) {
+    result <- c(result, mean(dataset[[i]]))
+  }
+  return(result)
+}
+
+random_samples <- generate_dataset(300, 1000, rbeta, 10, 4)
+mean_values <- calculate_mean_values(random_samples)
+
+qqnorm(random_samples[[1]])
+qqnorm(mean_values)
+
+```
+
+## Wrapping it up
+
+Lastly you take the role of the documentation writer. Use your newly
+gained knowledge about rmarkdown to describe your last function in more
+detail. It's good / allowed to split your final code block into smaller
+pieces, and also to demonstrate the use of the different functions.
+Start with a couple of lines with motivation about your functions, say
+how the functions work, and show that the Central Limit Theorem works
+for different distribution types. No need for long discussions, a few
+sentences each suffices.
+
+# Demonstrating the Central Limit Theorem
+
+The Central Limit Theorem states that the *mean of the means* of
+measurements with wildly different distributions, will tend to have a
+normal distribution.
+
+## Random dataset generator
+
+To demonstrate this principle, we'll create a function to calculate a
+large number of samples. The function can use many different types of
+random generation functions such as runif, rnorm or rbeta.
+
+The function creates a list with a selectable number of predefined
+vectors, each vector with a user-defined number of random samples. The
+function to create random numbers is also included.
+
+```{r random generator}
+generate_dataset <- function(n = 300, m = 1000, func=rbeta, ...) {
+  result <- list()
+  for (i in 1:n) {
+    result[[i]] <- func(m, ...)
+  }
+  return(result)
+}
+```
+
+## Means of all the vectors
+
+The following function will calculate the mean of all the separate
+vectors in the list. The output is a vector with these mean values.
+
+```{r calculate the mean}
+
+calculate_mean_values <- function(dataset) {
+  result <- c()
+  for (i in 1:length(dataset)) {
+    result <- c(result, mean(dataset[[i]]))
+  }
+  return(result)
+}
+
+```
+
+## Executing the functions to test different distributions
+
+As two simple examples, we'll be testing the uniform distribution (with
+runif) and a Beta distribution with $\alpha = 10$ and $\beta = 2$ (with
+rbeta)
+
+```{r central limit example}
+random_samples_beta <- generate_dataset(800, 1000, rbeta, 10, 2)
+random_samples_unif <- generate_dataset(800, 1000, runif)
+
+mean_values_beta <- calculate_mean_values(random_samples_beta)
+mean_values_unif <- calculate_mean_values(random_samples_unif)
+```
+
+### Uniform and beta distributions
+
+```{r show distributions of runif and rbeta}
+
+plot(density(random_samples_beta[[1]]), main="rbeta(10,2) vs runif")
+lines(density(random_samples_unif[[1]]), col="red")
+```
+
+Clearly these distributions are very different and both are not normally
+distributed. Now if we look at the means, we *do* see a normal
+distribution.
+
+```{r show distribution of the means}
+
+plot(density(mean_values_beta), main="means of rbeta(10,2)")
+plot(density(mean_values_unif), col="red", main="means of runif")
+
+```
+
+Of course the mean values are different, but their *distribution*
+follows the normal distribution, as can be show with q-q plots:
+
+```{r qqplots}
+ 
+qqnorm(mean_values_beta, main="beta distribution means")
+qqline(mean_values_beta)
+
+qqnorm(mean_values_unif, main="uniform distribution means")
+qqline(mean_values_unif)
+```
+
+To show that these are limits for basically infinite numbers of samples,
+let's have a look at much lower numbers.
+
+```{r low numbers }
+random_samples_beta2 <- generate_dataset(20, 20, rbeta, 10, 2)
+random_samples_unif2 <- generate_dataset(20, 20, runif)
+
+mean_values_beta2 <- calculate_mean_values(random_samples_beta2)
+mean_values_unif2 <- calculate_mean_values(random_samples_unif2)
+
+qqnorm(mean_values_beta2, main="beta distribution means")
+qqline(mean_values_beta2)
+
+qqnorm(mean_values_unif2, main="uniform distribution means")
+qqline(mean_values_unif2)
+
+```
+
+# Addressing some code smells
+
+Doing it in a complicated way :)
+
+If you want to demonstrate that means calculated from different
+distributions all end up in a normal distribution, it's nice to be able
+to automate it in a loop.\
+Here I demonstrate how this can be done, unfortunately it's a bit more
+complex code, because some of the distributions need arguments for their
+'...' inputs. I've solved this with strings.\
+Hopefully this code has some hidden features in it that you may be
+interested in.
+
+```{r generic loop - DRY but difficult}
+
+random_number_generators <- c("runif", "rnorm", "rt,20", "rbeta,4,12")
+
+# rng is an abbreviation for random number generator
+for (generator_name in random_number_generators) {
+  rng_command_with_args <- strsplit(generator_name, ",")[[1]]
+  rng_command_name <- rng_command_with_args[1]
+  rng_command <- get(rng_command_name)
+  rng_args <- as.numeric(rng_command_with_args[-1])
+  
+  gen_dataset_arguments <- c(list(n=1000, m=200, func=rng_command ), as.list(rng_args))
+  random_samples <- do.call(generate_dataset, gen_dataset_arguments)
+
+  qqnorm(random_samples[[1]], main=paste("number generator distribution", rng_command_name))
+  qqline(random_samples[[1]])
+  
+  mean_values <- calculate_mean_values(random_samples)
+
+  qqnorm(mean_values, main=paste("distribution of means of", rng_command_name))
+  qqline(mean_values)
+}
+
+```
