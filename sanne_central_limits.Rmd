@@ -417,8 +417,10 @@ comprehension is used to store the data frame as an object. Then, the
 examples with `rbeta` (left) and `rnorm` (right) will be plotted next to
 each other.
 
+
 ```{r plotting the funciton, echo=FALSE}
 set.seed(35486)
+par(mfrow=c(1,2))
 
 # Generate exponential samples with different sample sizes
 exp_m5 <- generate_dataset(
@@ -427,6 +429,7 @@ exp_m5 <- generate_dataset(
   FUN = rexp,
   rate = 1
 )
+
 
 qqnorm(dataframe_beta[[1]], main = "Original distribution", pch = 1, frame = FALSE)
 qqnorm(dataframe_norm[[1]], main = "Original distribution", pch = 1, frame = FALSE)
@@ -462,6 +465,12 @@ qqnorm(means_m1000, main = "Exponential Means: m = 1000")
 qqline(means_m1000, col = "red")
 
 par(mfrow = c(1, 1))
+
+qqnorm(dataframe_beta[[1]])
+qqline(dataframe_beta[[1]], col = "red", lwd = 2)
+qqnorm(dataframe_norm[[1]])
+qqline(dataframe_norm[[1]], col = "red", lwd = 2)
+
 ```
 
 From these graphs we can observe that the original sample 1 was not
