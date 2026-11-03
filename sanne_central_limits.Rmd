@@ -310,12 +310,15 @@ comprehension is used to store the data frame as an object. Then, the
 examples with `rbeta` (left) and `rnorm` (right) will be plotted next to
 each other.
 
-```{r plotting the funciton, echo=FALSE}
+```{r plotting the function, echo=FALSE}
 par(mfrow=c(1,2))
 
 dataframe_beta <- sample_dataset_beta[[1]]
 dataframe_norm <- sample_dataset_norm[[1]]
 
 qqnorm(dataframe_beta[[1]])
+qqline(dataframe_beta[[1]], col = "red", lwd = 2)
 qqnorm(dataframe_norm[[1]])
+qqline(dataframe_norm[[1]], col = "red", lwd = 2)
+
 ```
