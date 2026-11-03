@@ -1,7 +1,7 @@
 ---
 title: "Central limit theorem demonstration"
 author: "xxxxx"
-date: "2026-1 -03"
+date: "2026-11-03"
 output: html_document
 editor_options: 
   markdown: 
@@ -68,18 +68,22 @@ ggplot2 later in this course.
 ```{r densityplots, echo=FALSE}
 plot(density(data$x1), col = 2,    # Overlay all columns as densities
      xlim = c(- 3, 3),
-     ylim = c(0, 5))
-lines(density(data$x2), col = 3)
+     ylim = c(0, 5),
+     main = "Comparison of Distributions",
+     xlab = "Value"
+     )
 
+lines(density(data$x2), col = 3)
 lines(density(data$x3), col = 4)
 lines(density(data$x4), col = 5)
 lines(density(data$x5), col = 6)
+
 legend("topleft",                  # Add legend to plot
-       legend = c("x1 = rbeta(1000, 10, 2)",
-                  "x2 = rbeta(1000, 5, 2)",
-                  "x3 = rnorm(1000)",
-                  "x4 = rbeta(1000, 2, 5)",
-                  "x5 = rbeta(1000, 2, 10)"),
+       legend = c("Beta(10, 2)",
+                  "Beta(5, 2)",
+                  "Normal(0, 1)",
+                  "Beta(2, 5)",
+                  "Beta(2, 10)"),
        col = 2:6,
        lty = 1,
        cex = 0.8)
@@ -104,29 +108,37 @@ prevent printing of the R code that generated the plot.
 # set 'eval=TRUE' (or remove it) for this block to be interpreted by R
 
 generate_dataset <- function(vectors, samples) {
-  dataset <- matrix(nrow= samples, ncol=vectors)
-  col_names <- list()
-  for(i in seq(vectors)){
-    value <- rbeta(samples, 10, 2)
-    dataset[,i] <- value
-    var_name <- paste0("vector_", i)
-    col_names <- c(col_names, var_name)
-  }
-  dataset <- data.frame(dataset)
-  colnames(dataset) <- col_names
+
+  dataset <- replicate(
+    vectors,
+    rbeta(samples, shape1 = 10, shape2 = 2),
+    simplify = FALSE
+  )
+
+  names(dataset) <- paste0("vector_", seq_len(vectors))
+
   return(dataset)
 }
 
 calculate_mean_values <- function(dataset) {
-  mean <- apply(dataset, 2, mean)
-  return(mean)
+
+  means <- vapply(dataset, mean, numeric(1))
+
+  return(means)
 }
 
-random_samples <- generate_dataset(1000, 300)
+random_samples <- generate_dataset(300, 1000)
 mean_values <- calculate_mean_values(random_samples)
+head(mean_values)
 
-qqnorm(random_samples[[1]])
-qqnorm(mean_values)
+par(mfrow = c(1, 2))
+qqnorm(random_samples[[1]], main = "Original Beta Distribution")
+qqline(random_samples[[1]], col = "red")
+
+qqnorm(mean_values, main = "Distribution of Sample Means")
+qqline(mean_values, col = "red")
+
+par(mfrow = c(1, 1))
 ```
 
 ## Refactoring: adding functionality
@@ -143,29 +155,23 @@ We're *refactoring*, so make sure that the **generate_dataset()** call
 still works.
 
 ```{r first parameters}
-generate_dataset <- function(datasets, vectors, samples) {
-  list_datasets <- list()
-  dataset_names <- list()
-  for(n in seq(datasets)){
-    dataset <- matrix(nrow= samples, ncol=vectors)
-    col_names <- list()
-    for(i in seq(vectors)){
-      value <- rbeta(samples, 10, 2)
-      dataset[,i] <- value
-      var_name <- paste0("vector_", i)
-      col_names <- c(col_names, var_name)
-    }
-    dataset <- data.frame(dataset)
-    colnames(dataset) <- col_names
-    list_datasets[[n]] <- dataset
-    new_name <- paste0("dataset", n)
-    dataset_names <- c(dataset_names, new_name)
-  }
-  names(list_datasets) <- dataset_names
-  return(list_datasets)
+generate_dataset <- function(n = 300, m = 1000) {
+
+  datasets <- replicate(
+    n,
+    rbeta(m, shape1 = 10, shape2 = 2),
+    simplify = FALSE
+  )
+
+  names(datasets) <- paste0("dataset_", seq_len(n))
+
+  return(datasets)
 }
 
-test_refactored_1 <- generate_dataset(3, 300, 1000)
+test_refactored_1 <- generate_dataset(n = 3, m = 1000)
+
+length(test_refactored_1)
+length(test_refactored_1[[1]])
 ```
 
 ## Different alpha and beta arguments
@@ -175,29 +181,37 @@ and beta values for the rbeta function. Again, make sure the
 argument-less call gives the same results as before.
 
 ```{r add alpha and beta parameters}
-generate_dataset <- function(datasets, vectors, samples) {
-  list_datasets <- list()
-  dataset_names <- list()
-  for(n in seq(datasets)){
-    dataset <- matrix(nrow= samples, ncol=vectors)
-    col_names <- list()
-    for(i in seq(vectors)){
-      value <- rbeta(samples, sample.int(10, 1), sample.int(10, 1))
-      dataset[,i] <- value
-      var_name <- paste0("vector_", i)
-      col_names <- c(col_names, var_name)
-    }
-    dataset <- data.frame(dataset)
-    colnames(dataset) <- col_names
-    list_datasets[[n]] <- dataset
-    new_name <- paste0("dataset", n)
-    dataset_names <- c(dataset_names, new_name)
-  }
-  names(list_datasets) <- dataset_names
-  return(list_datasets)
+generate_dataset <- function(
+  n = 300,
+  m = 1000,
+  alpha = 10,
+  beta = 2
+) {
+
+  datasets <- replicate(
+    n,
+    rbeta(m, shape1 = alpha, shape2 = beta),
+    simplify = FALSE
+  )
+
+  names(datasets) <- paste0("dataset_", seq_len(n))
+
+  return(datasets)
 }
 
-test_refacotred_2 <- generate_dataset(3, 300, 1000)
+# Right-skewed beta distribution
+right_skewed <- generate_dataset(alpha = 2, beta = 5)
+
+# Left-skewed beta distribution
+left_skewed <- generate_dataset(alpha = 5, beta = 2)
+
+# Symmetric beta distribution
+symmetric <- generate_dataset(alpha = 2, beta = 2)
+
+# Calculate their sample means
+right_means <- calculate_mean_values(right_skewed)
+left_means <- calculate_mean_values(left_skewed)
+symmetric_means <- calculate_mean_values(symmetric)
 ```
 
 ## Ambitious exercise
@@ -220,31 +234,70 @@ Hints:
   list. This can be passed on to functions inside your function body
 
 ```{r free form random argument}
-generate_dataset <- function(n, vectors, samples, calc_function = rbeta) {
-  list_datasets <- list()
-  dataset_names <- list()
-  for(n in seq(n)){
-    dataset <- matrix(nrow= samples, ncol=vectors)
-    col_names <- list()
-    for(i in seq(vectors)){
-      value <- calc_function(samples, sample.int(10, 1), sample.int(10, 1))
-      dataset[,i] <- value
-      var_name <- paste0("vector_", i)
-      col_names <- c(col_names, var_name)
-    }
-    dataset <- data.frame(dataset)
-    colnames(dataset) <- col_names
-    list_datasets[[n]] <- dataset
-    new_name <- paste0("dataset", n)
-    dataset_names <- c(dataset_names, new_name)
-  }
-  names(list_datasets) <- dataset_names
-  return(list_datasets)
+# Default beta distribution
+default_beta <- function(size, alpha = 10, beta = 2) {
+
+  rbeta(size, shape1 = alpha, shape2 = beta)
+
 }
 
-test_refactored_3 <- generate_dataset(3, 300, 1000, rnorm)
-dataframe_1 <- test_refactored_3[[1]]
-qqnorm(dataframe_1[[1]])
+
+# Generalised dataset generator
+generate_dataset <- function(
+  n = 300,
+  m = 1000,
+  FUN = default_beta,
+  ...
+) {
+
+  datasets <- lapply(
+    seq_len(n),
+    function(i) FUN(m, ...)
+  )
+
+  names(datasets) <- paste0("dataset_", seq_len(n))
+
+  return(datasets)
+}
+
+# Beta distribution
+beta_data <- generate_dataset(
+  FUN = rbeta,
+  shape1 = 2,
+  shape2 = 5
+)
+
+# Uniform distribution
+uniform_data <- generate_dataset(
+  FUN = runif,
+  min = 0,
+  max = 1
+)
+
+# Normal distribution
+normal_data <- generate_dataset(
+  FUN = rnorm,
+  mean = 0,
+  sd = 1
+)
+
+# Exponential distribution
+exponential_data <- generate_dataset(
+  FUN = rexp,
+  rate = 1
+)
+
+beta_means <- calculate_mean_values(beta_data)
+
+uniform_means <- calculate_mean_values(uniform_data)
+
+normal_means <- calculate_mean_values(normal_data)
+
+exponential_means <- calculate_mean_values(exponential_data)
+length(beta_data)
+length(beta_data[[1]])
+length(beta_means)
+
 ```
 
 ## Wrapping it up
@@ -273,34 +326,68 @@ The dataset assigns the column names as "vector\_#" with \# being the
 number of the column.
 
 ```{r the function}
-generate_dataset <- function(n, vectors, samples, calc_function = rbeta) {
-  list_datasets <- list()
-  dataset_names <- list()
-  for(n in seq(n)){
-    dataset <- matrix(nrow= samples, ncol=vectors)
-    col_names <- list()
-    for(i in seq(vectors)){
-      value <- calc_function(samples, sample.int(10, 1), sample.int(10, 1))
-      dataset[,i] <- value
-      var_name <- paste0("vector_", i)
-      col_names <- c(col_names, var_name)
-    }
-    dataset <- data.frame(dataset)
-    colnames(dataset) <- col_names
-    list_datasets[[n]] <- dataset
-    new_name <- paste0("dataset", n)
-    dataset_names <- c(dataset_names, new_name)
-  }
-  names(list_datasets) <- dataset_names
-  return(list_datasets)
-}
+par(mfrow = c(2, 2))
+
+qqnorm(
+  beta_data[[1]],
+  main = "Original Beta(2,5)"
+)
+qqline(beta_data[[1]], col = "red")
+
+qqnorm(
+  beta_means,
+  main = "Beta Sample Means"
+)
+qqline(beta_means, col = "red")
+
+qqnorm(
+  exponential_data[[1]],
+  main = "Original Exponential"
+)
+qqline(exponential_data[[1]], col = "red")
+
+qqnorm(
+  exponential_means,
+  main = "Exponential Sample Means"
+)
+qqline(exponential_means, col = "red")
+
+par(mfrow = c(1, 1))
+par(mfrow = c(2, 2))
+
+qqnorm(beta_means, main = "Beta Sample Means")
+qqline(beta_means, col = "red")
+
+qqnorm(uniform_means, main = "Uniform Sample Means")
+qqline(uniform_means, col = "red")
+
+qqnorm(normal_means, main = "Normal Sample Means")
+qqline(normal_means, col = "red")
+
+qqnorm(exponential_means, main = "Exponential Sample Means")
+qqline(exponential_means, col = "red")
+
+par(mfrow = c(1, 1))
 ```
 
 Now, a list of 1 dataset per method is created.
 
 ```{r running the function}
-sample_dataset_beta <- generate_dataset(1, 300, 1000, rbeta)
-sample_dataset_norm <- generate_dataset(1, 300, 1000, rnorm)
+par(mfrow = c(2, 2))
+
+qqnorm(beta_means, main = "Beta Sample Means")
+qqline(beta_means, col = "red")
+
+qqnorm(uniform_means, main = "Uniform Sample Means")
+qqline(uniform_means, col = "red")
+
+qqnorm(normal_means, main = "Normal Sample Means")
+qqline(normal_means, col = "red")
+
+qqnorm(exponential_means, main = "Exponential Sample Means")
+qqline(exponential_means, col = "red")
+
+par(mfrow = c(1, 1))
 ```
 
 To access the data frame within the list of data frames, list
@@ -309,11 +396,46 @@ examples with `rbeta` (left) and `rnorm` (right) will be plotted next to
 each other.
 
 ```{r plotting the funciton, echo=FALSE}
-par(mfrow=c(1,2))
+set.seed(35486)
 
-dataframe_beta <- sample_dataset_beta[[1]]
-dataframe_norm <- sample_dataset_norm[[1]]
+# Generate exponential samples with different sample sizes
+exp_m5 <- generate_dataset(
+  n = 300,
+  m = 5,
+  FUN = rexp,
+  rate = 1
+)
 
-qqnorm(dataframe_beta[[1]])
-qqnorm(dataframe_norm[[1]])
+exp_m30 <- generate_dataset(
+  n = 300,
+  m = 30,
+  FUN = rexp,
+  rate = 1
+)
+
+exp_m1000 <- generate_dataset(
+  n = 300,
+  m = 1000,
+  FUN = rexp,
+  rate = 1
+)
+
+# Calculate sample means
+means_m5 <- calculate_mean_values(exp_m5)
+
+means_m30 <- calculate_mean_values(exp_m30)
+
+means_m1000 <- calculate_mean_values(exp_m1000)
+par(mfrow = c(1, 3))
+
+qqnorm(means_m5, main = "Exponential Means: m = 5")
+qqline(means_m5, col = "red")
+
+qqnorm(means_m30, main = "Exponential Means: m = 30")
+qqline(means_m30, col = "red")
+
+qqnorm(means_m1000, main = "Exponential Means: m = 1000")
+qqline(means_m1000, col = "red")
+
+par(mfrow = c(1, 1))
 ```
